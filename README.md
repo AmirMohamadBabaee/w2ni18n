@@ -21,6 +21,7 @@ Below is the installation, usage and other details of this module.
 * Russian
 * Slovak
 * Spanish
+* Persian
 
 
 ### Request new language
