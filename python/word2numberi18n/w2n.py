@@ -10,6 +10,10 @@ import locale
 import codecs
 import re
 from pickle import INST
+from typing import List
+from unittest import result
+
+from word2numberi18n.utils import split_by_terminate_number
 
 class W2N:
     ' Word2Number class '
@@ -61,19 +65,8 @@ class W2N:
         
         self.sorted_measure_values = sorted(self.sorted_measure_values,reverse=True)
         self.decimal_words = list(self.number_system.keys())[:10]
-        
-    
-    def number_formation(self, number_words):
-        """ [internal] function to form numeric multipliers
-        
-        input: list of strings
-        return value: integer
-        """
-        digit_values = []
-        # calculate the three digit values (max)
-        for word in number_words:
-            next_number_candidat = self.number_system[word]
-            digit_values.append(next_number_candidat)
+
+    def parse_number_list(self, digit_values: List[int]) -> int:
         hundred_index = digit_values.count(100)
         hundred_index = digit_values.index(100) if 100 in digit_values else -1
         if hundred_index == 1:
@@ -90,8 +83,28 @@ class W2N:
             digit_values[0] += digit_values[1]
             del digit_values[1]
         # return the result
-        return digit_values[0]
+        return digit_values[0]       
     
+    def number_formation(self, number_words: List[str], is_separate: bool=False) -> int:
+        """ [internal] function to form numeric multipliers
+        
+        input: list of strings
+        return value: integer
+        """
+        digit_values = []
+        # calculate the three digit values (max)
+        for word in number_words:
+            next_number_candidat = self.number_system[word]
+            digit_values.append(next_number_candidat)
+
+        if is_separate:
+            results = []
+            digit_values_list = split_by_terminate_number(digit_values)
+            for digit_values in digit_values_list:
+                results.append(str(self.parse_number_list(digit_values)))
+            return int(''.join(results))
+
+        return self.parse_number_list(digit_values)
     
     def get_decimal_string(self, decimal_digit_words):
         """ [internal] function to convert post decimal digit words to numerial digits
@@ -183,7 +196,7 @@ class W2N:
         return clean_numbers.index(localized_name) if localized_name in clean_numbers else -1
     
     
-    def get_number_value (self, clean_numbers):
+    def get_number_value (self, clean_numbers: List[str], is_separate: bool=False):
         """ [internal] function to get the pre-decimal number from clean_number
         
             input: sorted array with number words
@@ -224,7 +237,7 @@ class W2N:
         # rof
         # Now we add the value of less then hundred
         if len(clean_numbers) > 0:
-            multiplier = self.number_formation(clean_numbers)
+            multiplier = self.number_formation(clean_numbers, is_separate)
             result +=  multiplier * 1
         
         return result
@@ -240,9 +253,20 @@ class W2N:
         param = param if len(param)>0 else {self.get_name_by_number_value(1)}
         multiplier = self.number_formation(param)
         return multiplier
+
+    def clean_str(self, number_sentence):
+        clean_numbers = []
+        split_words = re.findall(r'\w+', number_sentence)  # strip extra spaces and comma and than split sentence into words
+        # removing unknown words form text
+        for word in split_words:
+            word = self.normalize_data.get(word,word) # replacing words and lemma text
+            if word in self.number_system:
+                clean_numbers.append(word)
+            elif word == self.localizedPointName:
+                clean_numbers.append(word)
+        return clean_numbers
     
-    
-    def word_to_num(self, number_sentence):
+    def word_to_num(self, number_sentence: str, is_separate: bool=False):
         """ public function to return integer for an input `number_sentence` string
         This function return as result
         - the same float if float is input
@@ -274,15 +298,7 @@ class W2N:
         if(number_sentence.isdigit()):  # return the number if user enters a number string
             result = int(number_sentence)
         else:
-            split_words = re.findall(r'\w+', number_sentence)  # strip extra spaces and comma and than split sentence into words
-        
-            # removing unknown words form text
-            for word in split_words:
-                word = self.normalize_data.get(word,word) # replacing words and lemma text
-                if word in self.number_system:
-                    clean_numbers.append(word)
-                elif word == self.localizedPointName:
-                    clean_numbers.append(word)
+            clean_numbers = self.clean_str(number_sentence)
         
             # Error message if the user enters invalid input!
             if len(clean_numbers) == 0:
@@ -319,7 +335,7 @@ class W2N:
                     raise ValueError("Malformed number in result of false measure word after point eg. trillion after thousand! Please enter a valid number word (eg. two million twenty three thousand and forty nine)")
     
             # Now we calculate the pre-decimal value
-            result = self.get_number_value(clean_numbers)
+            result = self.get_number_value(clean_numbers, is_separate)
             
             # And add the post-decimal value
             if len(clean_decimal_numbers) > 0:
@@ -327,6 +343,30 @@ class W2N:
                 result = float(total_sum_as_string)
     
         return result
+
+
+    def text_to_num(self, text: str, ignore_zero: bool=True):
+        clean_numbers = self.clean_str(text)
+        has_zero = False
+
+        first_clean_number  = clean_numbers[0]
+        last_clean_number   = clean_numbers[-1]
+
+        if 'صفر' in clean_numbers and clean_numbers.index('صفر') == 0:
+            has_zero = True
+            clean_numbers = clean_numbers[1:]
+
+        number_start_index  = text.find(first_clean_number)
+        number_end_index    = text.find(last_clean_number) + len(last_clean_number)
+
+        number = self.word_to_num(' '.join(clean_numbers), is_separate=True)
+
+        if not ignore_zero:
+            if has_zero:
+                number = f'0{number}'
+
+        return text.replace(text[number_start_index:number_end_index], f'{number}')
+
 
 def word_to_num(number_sentence, lang_param=None):
     instance = W2N(lang_param)
