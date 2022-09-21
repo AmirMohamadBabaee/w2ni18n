@@ -21,7 +21,7 @@ Below is the installation, usage and other details of this module.
 * Russian
 * Slovak
 * Spanish
-* Persian
+* Persian (just python implementation)
 
 
 ### Request new language
@@ -106,7 +106,7 @@ Please ensure that you have **updated pip** to the latest version before install
 
 You can install the module using Python Package Index using the below command.
 
-```
+```bash
     pip3 install word2number-i18n 
 ```
 
@@ -114,14 +114,14 @@ You can install the module using Python Package Index using the below command.
 
 On macOS
 
-```
+```python3
     # git clone https://github.com/bastie/w2ni18n.git w2n
     # python3 setup.py install
 ```
 
 Make sure you install all requirements given in requirements.txt
 
-```
+```python3
     pip3 install -r requirements.txt
 ```
 
@@ -136,24 +136,24 @@ First you have to import the module using the below code.
 
 Then you can use the **word_to_num** method to convert a number-word to numeric digits, as shown below.
 
-```
+```python3
 print(w2n.word_to_num("two million three thousand nine hundred and eighty four"))
 2003984
 ```
-```
+```python3
 print(w2n.word_to_num('two point three')) 
 2.3
 ```
-```
+```python3
 print(w2n.word_to_num('one hundred thirty-five')) 
 135
 ```
-```
+```python3
 print(w2n.word_to_num('million million'))
 Error: Redundant number! Please enter a valid number word (eg. two million twenty three thousand and forty nine)
 None
 ```
-```
+```python3
 print(w2n.word_to_num('blah'))
 Error: No valid number words found! Please enter a valid number word (eg. two million twenty three thousand and forty nine)
 None
