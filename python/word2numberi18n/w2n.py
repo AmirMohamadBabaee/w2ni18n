@@ -5,13 +5,13 @@
 """
 
 
+from itertools import groupby
 import os
 import locale
 import codecs
 import re
 from pickle import INST
 from typing import List
-from unittest import result
 
 from word2numberi18n.utils import split_by_terminate_number
 
@@ -142,7 +142,7 @@ class W2N:
         # for examples: both is right "vingt et un" and "vingt-et-un"
         # we change this to composed value "vingt-et-un" over the localized data file "replace:" entry
         for non_composed_number_value, composed_number_value in self.normalize_data.items():
-            if non_composed_number_value.count(' ') >0:
+            if number_sentence.count(non_composed_number_value) > 0:
                 number_sentence = number_sentence.replace(non_composed_number_value, composed_number_value)
     
         return number_sentence.strip()
@@ -266,7 +266,7 @@ class W2N:
                 clean_numbers.append(word)
         return clean_numbers
     
-    def word_to_num(self, number_sentence: str, is_separate: bool=False):
+    def word_to_num(self, number_sentence: str, is_separate: bool=False, str_out: bool=False):
         """ public function to return integer for an input `number_sentence` string
         This function return as result
         - the same float if float is input
@@ -340,32 +340,54 @@ class W2N:
             # And add the post-decimal value
             if len(clean_decimal_numbers) > 0:
                 total_sum_as_string = str(result)+"."+str(self.get_decimal_string(clean_decimal_numbers))
-                result = float(total_sum_as_string)
+                if not str_out:
+                    result = float(total_sum_as_string)
+                else:
+                    result = total_sum_as_string
+
+        if str_out:
+            return str(result)
     
         return result
 
 
     def text_to_num(self, text: str, ignore_zero: bool=True):
-        clean_numbers = self.clean_str(text)
-        has_zero = False
+        normal_text = self.normalize(text)
+        temp_text   = normal_text
+        safe_name   = list(self.number_system.keys()) + ['و'] + [self.localizedPointName]
+        # clean_numbers = self.clean_str(text)
 
-        first_clean_number  = clean_numbers[0]
-        last_clean_number   = clean_numbers[-1]
+        number_list = []
+        clean_number_state = [number in safe_name for number in normal_text.split()]
 
-        if 'صفر' in clean_numbers and clean_numbers.index('صفر') == 0:
-            has_zero = True
-            clean_numbers = clean_numbers[1:]
+        for k, g in groupby(enumerate(clean_number_state), key=lambda x: x[1]):
+            if k: # k is True
+                g = list(g) # for example: [(1, True), (2, True)]
+                number_list.append([g[0][0], len(g)]) # for example: [1, 2]
 
-        number_start_index  = text.find(first_clean_number)
-        number_end_index    = text.find(last_clean_number) + len(last_clean_number)
+        for start_index, length in number_list:
 
-        number = self.word_to_num(' '.join(clean_numbers), is_separate=True)
+            has_zero = False
+            cur_text = ' '.join(normal_text.split()[start_index: start_index+length])
+            cur_clean_numbers = self.clean_str(cur_text)
 
-        if not ignore_zero:
-            if has_zero:
-                number = f'0{number}'
+            if 'صفر' in cur_clean_numbers and cur_clean_numbers.index('صفر') == 0:
+                has_zero = True
+                cur_clean_numbers = cur_clean_numbers[1:]
 
-        return text.replace(text[number_start_index:number_end_index], f'{number}')
+            number_start_index  = temp_text.find(cur_text)
+            number_end_index    = number_start_index + len(cur_text)
+
+            number = self.word_to_num(' '.join(cur_clean_numbers), is_separate=True, str_out=True)
+            number = number.replace('0.0', '0')
+
+            if not ignore_zero:
+                if has_zero:
+                    number = f'0{number}'
+
+            temp_text = temp_text.replace(temp_text[number_start_index:number_end_index], f'{number}')
+
+        return temp_text
 
 
 def word_to_num(number_sentence, lang_param=None):
