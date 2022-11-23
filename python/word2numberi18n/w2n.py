@@ -355,11 +355,30 @@ class W2N:
         normal_text = self.normalize(text)
         temp_text   = normal_text
         safe_name   = list(self.number_system.keys()) + ['و'] + [self.localizedPointName]
-        # clean_numbers = self.clean_str(text)
+        # clean_numbers = self.clean_str(text)    
 
-        number_list = []
-        clean_number_state = [number in safe_name for number in normal_text.split()]
+        def clean_number_state_func(normal_text: str) -> List[bool]:
+            clean_state_list = []
+            normal_text_list = normal_text.split()
 
+            prev_number = None
+            for number in normal_text_list:
+                if number in safe_name:
+                    if number == 'و' and prev_number in list(self.number_system.keys())[:20]:
+                        clean_state_list.append(False)
+                    else:
+                        clean_state_list.append(True)
+                else:
+                    clean_state_list.append(False)
+
+                prev_number = number
+
+            return clean_state_list
+
+        clean_number_state  = clean_number_state_func(normal_text)
+
+        
+        number_list = [] 
         for k, g in groupby(enumerate(clean_number_state), key=lambda x: x[1]):
             if k: # k is True
                 g = list(g) # for example: [(1, True), (2, True)]
