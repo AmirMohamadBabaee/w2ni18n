@@ -164,6 +164,7 @@ class TestW2N(unittest.TestCase):
         self.assertEqual(instance.text_to_num("سه هزار و چهارصد و پنجاه"), '3450')
 
         # Testing Text_to_num method
+        self.assertEqual(instance.text_to_num('به ترتیب بیست و یک و سی و چهار نفر در این دو حادثه آسیب دیدند.', ignore_zero=False), 'به ترتیب 21 و 34 نفر در این 2 حادثه آسیب دیدند.')
         self.assertEqual(instance.text_to_num('صفر نهصد و دوازده', ignore_zero=False), '0912')
         self.assertEqual(instance.text_to_num('من دوستم را بیست و سه روز پیش دیدم', ignore_zero=False), 'من دوستم را 23 روز پیش دیدم')
         self.assertEqual(instance.text_to_num('شماره همراه من صفر نهصد و سی و دو پانصد و چهل و هشت هفتاد هشتاد و پنج است', ignore_zero=False), 'شماره همراه من 09325487085 است')
