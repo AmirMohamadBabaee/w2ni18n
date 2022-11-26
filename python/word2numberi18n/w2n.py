@@ -13,7 +13,7 @@ import re
 from pickle import INST
 from typing import List
 
-from word2numberi18n.utils import split_by_terminate_number
+from word2numberi18n.utils import split_by_terminate_number, is_dependent
 
 class W2N:
     ' Word2Number class '
@@ -362,21 +362,32 @@ class W2N:
             normal_text_list = normal_text.split()
 
             prev_number = None
+            second_prev_number = None
             for number in normal_text_list:
                 if number in safe_name:
                     if number == 'و' and prev_number in list(self.number_system.keys())[:20]:
                         clean_state_list.append(False)
+
+                    elif prev_number == 'و' and second_prev_number is not None:
+                        first_number = self.number_system.get(second_prev_number, -1)
+                        second_number = self.number_system.get(number, -1)
+                        if not is_dependent(first_number, second_number):
+                            clean_state_list[-1] = False
+                        
+                        clean_state_list.append(True)
+
                     else:
                         clean_state_list.append(True)
+
                 else:
                     clean_state_list.append(False)
 
+                second_prev_number = prev_number
                 prev_number = number
 
             return clean_state_list
 
         clean_number_state  = clean_number_state_func(normal_text)
-
         
         number_list = [] 
         for k, g in groupby(enumerate(clean_number_state), key=lambda x: x[1]):
