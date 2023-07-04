@@ -38,7 +38,7 @@ instance.word_to_number('یک میلیون و هزار و سیصد و هشت')
 ### text_to_number
 this function, takes an string and find first substring of numbers and convert it to numerical form and replace alphabetical format of number with its numerical format. you can use it like below:
 ```python
-instance.text_to_number('شماره تلفن همراه من، صفر نهصد و دوازده سیصد و شصت و چهار پنجاه و دو پنجاه می‌باشد.', ignore_zero=False)
+instance.text_to_num('شماره تلفن همراه من، صفر نهصد و دوازده سیصد و شصت و چهار پنجاه و دو پنجاه می‌باشد.', ignore_zero=False)
 >>> 'شماره تلفن همراه من، 09123645250 می‌باشد.'
 ```
 
