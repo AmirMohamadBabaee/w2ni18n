@@ -355,18 +355,98 @@ class W2N:
         normal_text = self.normalize(text)
         temp_text   = normal_text
         safe_name   = list(self.number_system.keys()) + ['و'] + [self.localizedPointName]
+
+        #by saber>>>>
+        normal_text_list1 = normal_text.split()
+
+        new_normal_text_list2 = []
+        i = 0
+        for i in range(len(normal_text_list1)):
+            new_normal_text_list2.append(normal_text_list1[i])
+
+        per_Index = 0
+        Index_va = 0
+        Index_zero = 0
+        j = 0
+        i = 0
+        for i in range(len(normal_text_list1)):
+            if normal_text_list1[i] in safe_name and normal_text_list1[i] != 'و' and normal_text_list1[i] != 'صفر':
+                if per_Index == 1:
+                    if normal_text_list1[i] != 'هزار' and normal_text_list1[i] != 'میلیون' and normal_text_list1[i] != 'میلیارد' and normal_text_list1[i] != 'تریلیون':
+                        new_normal_text_list2.insert(i + j, 'بارانسزگاز')
+                        j += 1
+                elif normal_text_list1[i] == 'هزار':
+                    new_normal_text_list2[i+j]='یک هزار'
+
+                elif normal_text_list1[i] == 'میلیون':
+                    new_normal_text_list2[i + j] = 'یک میلیون'
+
+                elif normal_text_list1[i] == 'میلیارد':
+                    new_normal_text_list2[i+j]='یک میلیارد'
+
+                elif normal_text_list1[i] == 'تریلیون':
+                    new_normal_text_list2[i + j] = 'یک تریلیون'
+
+                per_Index = 1
+                Index_va = 0
+                Index_zero = 0
+            elif normal_text_list1[i] == 'صفر':
+                if per_Index == 1:
+                    new_normal_text_list2.insert(i + j, 'بارانسزگاز')
+                    j += 1
+                    per_Index = 0
+                if Index_va == 1:
+                    new_normal_text_list2.insert(i + j, 'بارانسزگاز')
+                    new_normal_text_list2.insert(i + j - 1, 'بارانسزگاز')
+                    j += 2
+                if Index_zero == 1:
+                    new_normal_text_list2.insert(i + j, 'بارانسزگاز')
+                    j += 1
+                Index_va = 0
+                Index_zero = 1
+            else:
+                per_Index = 0
+                if  normal_text_list1[i] == 'و':
+                    Index_va = 1
+                else:
+                    Index_va = 0
+                if  normal_text_list1[i] == 'صفر':
+                    Index_zero = 1
+                else:
+                    Index_zero = 0
+
+        normal_text_list1 = []
+
+        i=0
+        for i in range(len(new_normal_text_list2)):
+            normal_text_list1.append(new_normal_text_list2[i])
+
+        str1 = ""
+        for ele in normal_text_list1:
+            str1 += ele
+            str1 += ' '
+
+        normal_text = str1[:-1]
+        temp_text = normal_text
+        #by saber<<<<
+
         # clean_numbers = self.clean_str(text)    
 
         def clean_number_state_func(normal_text: str) -> List[bool]:
             clean_state_list = []
             normal_text_list = normal_text.split()
 
+            # some change by saber in for loop
             prev_number = None
             second_prev_number = None
             for number in normal_text_list:
+
                 if number in safe_name:
-                    if number == 'و' and prev_number in list(self.number_system.keys())[:20]:
+                    if prev_number == 'و' and prev_number in list(self.number_system.keys())[:20]:
                         clean_state_list.append(False)
+
+                    #elif prev_number != 'و' and prev_number in list(self.number_system.keys()):
+                    #    clean_state_list.append(False)
 
                     elif prev_number == 'و' and second_prev_number is not None:
                         first_number = self.number_system.get(second_prev_number, -1)
@@ -377,7 +457,14 @@ class W2N:
                         clean_state_list.append(True)
 
                     else:
-                        clean_state_list.append(True)
+                        #by saber
+                        if number == 'و':
+                            if prev_number in safe_name:
+                                clean_state_list.append(True)
+                            else:
+                                clean_state_list.append(False)
+                        else:
+                            clean_state_list.append(True)
 
                 else:
                     clean_state_list.append(False)
@@ -395,8 +482,10 @@ class W2N:
                 g = list(g) # for example: [(1, True), (2, True)]
                 number_list.append([g[0][0], len(g)]) # for example: [1, 2]
 
-        for start_index, length in number_list:
+        zero_flag=0  #by saber
 
+        for start_index, length in number_list:
+            i=i+1
             has_zero = False
             cur_text = ' '.join(normal_text.split()[start_index: start_index+length])
             cur_clean_numbers = self.clean_str(cur_text)
@@ -405,18 +494,27 @@ class W2N:
                 has_zero = True
                 cur_clean_numbers = cur_clean_numbers[1:]
 
-            number_start_index  = temp_text.find(cur_text)
-            number_end_index    = number_start_index + len(cur_text)
+            #by saber
+            if len(cur_clean_numbers) == 0 :
+                zero_flag = 1
 
-            number = self.word_to_num(' '.join(cur_clean_numbers), is_separate=True, str_out=True)
-            number = number.replace('0.0', '0')
+            number_start_index  = temp_text.find(cur_text)
+            number_end_index = number_start_index + len(cur_text)
+
+            if zero_flag == 0: #if condition by saber
+                number = self.word_to_num(' '.join(cur_clean_numbers), is_separate=True, str_out=True)
+                number = number.replace('0.0', '0')
+            else:  #by saber
+                number = ''
+                zero_flag = 0
 
             if not ignore_zero:
                 if has_zero:
                     number = f'0{number}'
 
-            temp_text = temp_text.replace(temp_text[number_start_index:number_end_index], f'{number}')
+            temp_text = temp_text.replace(temp_text[number_start_index:number_end_index], f'{number}', 1) #by saber: add "count"=1 attribute
 
+        temp_text = temp_text.replace(' بارانسزگاز ','')  #by saber
         return temp_text
 
 
@@ -425,4 +523,3 @@ def word_to_num(number_sentence, lang_param=None):
     return instance.word_to_num(number_sentence)
 
 #EOF
-
